@@ -50,6 +50,8 @@ class Resource
 
     //status change
     void setStatus(Status newStatus);
+
+    virtual std::string getResourceType() const = 0;
 };
 
 #endif

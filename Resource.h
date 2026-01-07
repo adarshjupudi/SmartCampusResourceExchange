@@ -24,6 +24,7 @@ class Resource
 
     protected:
 
+    std::string displayName;
     int resourceId;
     int ownerId;
     Status status;
@@ -35,7 +36,7 @@ class Resource
     public:
 
     //constructor
-    Resource(int resourceId,int ownerId,ImportanceLevel importance);
+    Resource(int resourceId,int ownerId,ImportanceLevel importance,const std::string &displayName);
     virtual ~Resource(){};
 
     //getters
@@ -43,6 +44,7 @@ class Resource
     int getOwnerId() const;
     Status getStatus() const;
     ImportanceLevel getImportance() const;
+    std::string getDisplayName() const;
 
     //owner rules
     int getMinTrustRequired() const;

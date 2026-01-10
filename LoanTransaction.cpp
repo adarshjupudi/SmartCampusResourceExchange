@@ -1,6 +1,6 @@
 #include "LoanTransaction.h"
-#include "User.h"
 #include "Resource.h"
+#include "User.h"
 
 // constructor
 LoanTransaction::LoanTransaction(int transactionId,
@@ -50,4 +50,46 @@ bool LoanTransaction::isLate() const
         return false;
     }
     return returnDate > dueDate;
+}
+bool LoanTransaction::process()
+{
+
+    if(status!=Status::PENDING)
+    {
+        return false;
+    }
+    if(resource->getStatus() != Resource::Status::AVAILABLE)
+    {
+        status=Status::FAILED;
+        return false;
+    }
+    if(borrower->getTrustPoints() < resource->getMinTrustRequired())
+    {
+        status=Status::FAILED;
+        return false;
+    }
+    resource->setStatus(Resource::Status::LOANED);
+    status=Status::COMPLETED;
+    return true;
+}
+void LoanTransaction::markReturned(const std::string &date)
+{
+    if(returned)
+    {
+        return;
+    }
+    returnDate = date;
+    returned = true;
+    resource->setStatus(Resource::Status::AVAILABLE);
+
+    if(isLate())
+    {
+        borrower->updateTrust(-10);
+        owner->updateTrust(+2);
+    }
+    else
+    {
+        status=Status::COMPLETED;
+        borrower->updateTrust(5);
+    }
 }

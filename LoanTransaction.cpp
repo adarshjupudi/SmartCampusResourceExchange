@@ -81,15 +81,15 @@ void LoanTransaction::markReturned(const std::string &date)
     returnDate = date;
     returned = true;
     resource->setStatus(Resource::Status::AVAILABLE);
-
+    status=Status::COMPLETED;
     if(isLate())
     {
         borrower->updateTrust(-10);
-        owner->updateTrust(+2);
+        owner->updateTrust(+6);
     }
     else
     {
-        status=Status::COMPLETED;
-        borrower->updateTrust(5);
+        borrower->updateTrust(+2);
+        owner->updateTrust(+5);
     }
 }

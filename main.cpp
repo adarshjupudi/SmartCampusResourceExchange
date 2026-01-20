@@ -15,7 +15,7 @@ int main()
     vector<User*> allUsers;
     vector<Resource*> allResources;
 
-    int nextUserId = 1;
+    int nextUserId = 1;//placeholders currently
     int nextResourceId = 100;
 
     User* currentUser = nullptr;
@@ -178,7 +178,6 @@ int main()
             }
         }
     }
-
     cout << "Exiting program.\n";
     return 0;
 }

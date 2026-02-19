@@ -15,6 +15,9 @@ int main()
     vector<User*> allUsers;
     vector<Resource*> allResources;
 
+    //load users
+    marketplace.loadUsers("users.txt");
+    marketplace.saveUsers("users.txt");
     int nextUserId = 1;//placeholders currently
     int nextResourceId = 100;
 

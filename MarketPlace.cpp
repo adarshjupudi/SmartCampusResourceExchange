@@ -2,7 +2,8 @@
 #include "User.h"
 #include "Resource.h"
 #include "LoanTransaction.h"
-
+#include <fstream>
+#include <sstream>
 Marketplace::Marketplace()
     : nextTransactionId(1)
 {
@@ -81,4 +82,52 @@ const std::vector<Resource*>& Marketplace::getResources() const
 const std::vector<LoanTransaction*>& Marketplace::getTransactions() const
 {
     return transactions;
+}
+
+void Marketplace::loadUsers(const std::string& filename)
+{
+    std::ifstream file(filename);
+    if(!file)
+        return;   // file may not exist first time
+
+    std::string line;
+    int maxId = 0;
+
+    while(std::getline(file, line))
+    {
+        std::stringstream ss(line);
+
+        std::string idStr, name, password, trustStr;
+
+        std::getline(ss, idStr, '|');
+        std::getline(ss, name, '|');
+        std::getline(ss, password, '|');
+        std::getline(ss, trustStr, '|');
+
+        int id = std::stoi(idStr);
+        int trust = std::stoi(trustStr);
+
+        User* user = new User(id, name, password);
+        user->updateTrust(trust);
+
+        users.push_back(user);
+
+        if(id > maxId)
+            maxId = id;
+    }
+
+    User::setNextId(maxId + 1);
+}
+
+void Marketplace::saveUsers(const std::string& filename)
+{
+    std::ofstream file(filename);
+
+    for(User* user : users)
+    {
+        file << user->getUserId() << "|"
+             << user->getName() << "|"
+             << user->getPassword() << "|"
+             << user->getTrustPoints() << "\n";
+    }
 }

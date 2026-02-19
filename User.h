@@ -2,25 +2,35 @@
 #define USER_H
 
 #include <string>
+
 class User
 {
-    private:
+private:
+    static int nextId;         
     int userId;
     std::string name;
     std::string password;
     int trustPoints;
-    public:
-    //constructors
-    User();
-    User(int id,const std::string &name,const std::string &password);
-    //getters
+
+public:
+    // Constructors
+    User(const std::string& name, const std::string& password); // auto-ID
+    User(int id, const std::string& name, const std::string& password); // for loading
+
+    // Getters
     int getUserId() const;
     std::string getName() const;
+    std::string getPassword() const;
     int getTrustPoints() const;
-    //login&authentication
-    bool checkPassword(const std::string &password) const; 
-    //trust logic(+ve/-ve)
+
+    // Authentication
+    bool checkPassword(const std::string& password) const;
+
+    // Trust logic
     void updateTrust(int amount);
+
+    // Static ID control (for persistence resume)
+    static void setNextId(int id);
 };
 
 #endif

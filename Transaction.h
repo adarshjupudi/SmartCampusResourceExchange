@@ -11,6 +11,7 @@ class Transaction
     enum class Status
     {
         PENDING,
+        ACTIVE,
         COMPLETED,
         FAILED,
         DISPUTED

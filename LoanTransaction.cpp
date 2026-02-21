@@ -69,12 +69,12 @@ bool LoanTransaction::process()
         return false;
     }
     resource->setStatus(Resource::Status::LOANED);
-    status=Status::COMPLETED;
+    status=Status::ACTIVE;
     return true;
 }
 void LoanTransaction::markReturned(const std::string &date)
 {
-    if(returned)
+    if(status!=Status::ACTIVE)
     {
         return;
     }

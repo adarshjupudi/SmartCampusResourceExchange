@@ -1,55 +1,41 @@
-#include "Resource.h"
+#include "Book.h"
 
-Resource::Resource(int resourceId,
-                   int ownerId,
-                   ImportanceLevel importance,
-                   const std::string &displayName)
-    : displayName(displayName),
-      resourceId(resourceId),
-      ownerId(ownerId),
-      status(Status::AVAILABLE),
-      importance(importance),
-      minTrustRequired(0),
-      maxLoanDuration(30)
+Book::Book(int resourceId,
+           int ownerId,
+           ImportanceLevel importance,
+           const std::string &title,
+           const std::string &author,
+           const std::string &isbn,
+           int edition)
+    : Resource(resourceId, ownerId, importance, title),
+      title(title),
+      author(author),
+      isbn(isbn),
+      edition(edition)
 {
 }
 
-int Resource::getResourceId() const
+std::string Book::getTitle() const
 {
-    return resourceId;
+    return title;
 }
 
-int Resource::getOwnerId() const
+std::string Book::getAuthor() const
 {
-    return ownerId;
+    return author;
 }
 
-Resource::Status Resource::getStatus() const
+int Book::getEdition() const
 {
-    return status;
+    return edition;
 }
 
-Resource::ImportanceLevel Resource::getImportance() const
+std::string Book::getIsbn() const
 {
-    return importance;
+    return isbn;
 }
 
-std::string Resource::getDisplayName() const
+std::string Book::getResourceType() const
 {
-    return displayName;
-}
-
-int Resource::getMinTrustRequired() const
-{
-    return minTrustRequired;
-}
-
-int Resource::getMaxLoanDuration() const
-{
-    return maxLoanDuration;
-}
-
-void Resource::setStatus(Status newStatus)
-{
-    status = newStatus;
+    return "Book";
 }

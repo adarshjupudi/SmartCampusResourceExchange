@@ -2,6 +2,9 @@
 #include "User.h"
 #include "Resource.h"
 #include "LoanTransaction.h"
+#include "Book.h"
+#include "Electronic.h"
+#include "LabGear.h"
 #include <fstream>
 #include <sstream>
 Marketplace::Marketplace()
@@ -129,5 +132,57 @@ void Marketplace::saveUsers(const std::string& filename)
              << user->getName() << "|"
              << user->getPassword() << "|"
              << user->getTrustPoints() << "\n";
+    }
+}
+
+void Marketplace::saveResources(const std::string& filename)
+{
+    std::ofstream file(filename);
+
+    for(Resource* r : resources)
+    {
+        std::string status =
+            (r->getStatus() == Resource::Status::AVAILABLE) ? "AVAILABLE" : "LOANED";
+
+        if(r->getResourceType() == "Book")
+        {
+            Book* b = dynamic_cast<Book*>(r);
+
+            file << "BOOK|"
+                 << b->getResourceId() << "|"
+                 << b->getOwnerId() << "|"
+                 << b->getTitle() << "|"
+                 << b->getAuthor() << "|"
+                 << b->getIsbn() << "|"
+                 << b->getEdition() << "|"
+                 << status << "\n";
+        }
+
+        else if(r->getResourceType() == "Electronic")
+        {
+            Electronic* e = dynamic_cast<Electronic*>(r);
+
+            file << "ELECTRONIC|"
+                 << e->getResourceId() << "|"
+                 << e->getOwnerId() << "|"
+                 << e->getBrand() << "|"
+                 << e->getModel() << "|"
+                 << e->isWorking() << "|"
+                 << e->hasBattery() << "|"
+                 << status << "\n";
+        }
+
+        else if(r->getResourceType() == "LabGear")
+        {
+            LabGear* g = dynamic_cast<LabGear*>(r);
+
+            file << "LABGEAR|"
+                 << g->getResourceId() << "|"
+                 << g->getOwnerId() << "|"
+                 << g->getCatergory() << "|"
+                 << g->getSafetyRating() << "|"
+                 << g->needsTraining() << "|"
+                 << status << "\n";
+        }
     }
 }

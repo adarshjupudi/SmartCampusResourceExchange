@@ -6,7 +6,9 @@
 #include "User.h"
 #include "Book.h"
 #include "LoanTransaction.h"
-
+#include "Book.h"
+#include "Electronic.h"
+#include "LabGear.h"
 using namespace std;
 
 int main()
@@ -17,7 +19,11 @@ int main()
 
     //load users
     marketplace.loadUsers("users.txt");
-    marketplace.saveUsers("users.txt");
+    // copy loaded users into local list
+    for(User* u : marketplace.getUsers())
+    {
+        allUsers.push_back(u);
+    }
     int nextUserId = 1;//placeholders currently
     int nextResourceId = 100;
 
@@ -49,6 +55,8 @@ int main()
                 User* u = new User(nextUserId++, name, pass);
                 allUsers.push_back(u);
                 marketplace.addUser(u);
+
+                marketplace.saveUsers("users.txt");
 
                 cout << "Registered successfully.\n";
             }
@@ -131,13 +139,26 @@ int main()
             else if(choice == 2)
             {
                 cout << "\n--- Available Resources ---\n";
+
                 for(Resource* r : marketplace.getResources())
                 {
                     cout << "ID: " << r->getResourceId()
-                         << " | Owner ID: " << r->getOwnerId()
-                         << " | Status: "
-                         << (r->getStatus() == Resource::Status::AVAILABLE ? "AVAILABLE" : "NOT AVAILABLE")
-                         << "\n";
+                        << " | Owner ID: " << r->getOwnerId()
+                        << " | Status: "
+                        << (r->getStatus() == Resource::Status::AVAILABLE ? "AVAILABLE" : "LOANED");
+
+                    if(r->getResourceType() == "Book")
+                    {
+                        Book* b = dynamic_cast<Book*>(r);
+
+                        cout << " | Type: Book"
+                            << " | Title: " << b->getTitle()
+                            << " | Author: " << b->getAuthor()
+                            << " | ISBN: " << b->getIsbn()
+                            << " | Edition: " << b->getEdition();
+                    }
+
+                    cout << endl;
                 }
             }
 
@@ -182,5 +203,6 @@ int main()
         }
     }
     cout << "Exiting program.\n";
+    marketplace.saveUsers("users.txt");
     return 0;
 }

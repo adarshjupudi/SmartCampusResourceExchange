@@ -38,6 +38,16 @@ Resource *LoanTransaction::getResource() const
     return resource;
 }
 
+std::string LoanTransaction::getStartDate() const
+{
+    return startDate;
+}
+
+std::string LoanTransaction::getDueDate() const
+{
+    return dueDate;
+}
+
 bool LoanTransaction::isReturned() const
 {
     return returned;

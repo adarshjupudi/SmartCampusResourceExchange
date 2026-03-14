@@ -6,7 +6,6 @@
 #include "User.h"
 #include "Book.h"
 #include "LoanTransaction.h"
-#include "Book.h"
 #include "Electronic.h"
 #include "LabGear.h"
 using namespace std;
@@ -19,6 +18,7 @@ int main()
 
     //load users
     marketplace.loadUsers("users.txt");
+    marketplace.loadResources("items.txt");
     // copy loaded users into local list
     for(User* u : marketplace.getUsers())
     {
@@ -112,7 +112,7 @@ int main()
                 int edition;
 
                 cout << "Title: ";
-                cin >> title;
+                getline(cin, title);
                 cout << "Author: ";
                 cin >> author;
                 cout << "ISBN: ";
@@ -132,7 +132,7 @@ int main()
 
                 allResources.push_back(b);
                 marketplace.addResource(b);
-
+                marketplace.saveResources("items.txt");
                 cout << "Book added successfully.\n";
             }
 
@@ -169,7 +169,7 @@ int main()
                 cin >> rid;
 
                 Resource* target = nullptr;
-                for(Resource* r : allResources)
+                for(Resource* r : marketplace.getResources())
                 {
                     if(r->getResourceId() == rid)
                     {
@@ -204,5 +204,6 @@ int main()
     }
     cout << "Exiting program.\n";
     marketplace.saveUsers("users.txt");
+    marketplace.saveResources("items.txt");
     return 0;
 }

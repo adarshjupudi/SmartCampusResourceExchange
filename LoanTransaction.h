@@ -53,6 +53,9 @@ class LoanTransaction : public Transaction
     User *getBorrower() const;
     User *getOwner() const;
     Resource *getResource() const;
+
+    std::string getStartDate() const;
+    std::string getDueDate() const;
 };
 
 #endif

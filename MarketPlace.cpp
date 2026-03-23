@@ -277,7 +277,6 @@ void Marketplace::loadTransactions(const std::string& filename)
         }
     }
 }
-
 void Marketplace::loadResources(const std::string& filename)
 {
     std::ifstream file(filename);

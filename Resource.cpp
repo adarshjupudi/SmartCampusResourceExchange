@@ -1,11 +1,11 @@
 #include "Resource.h"
 
-Resource::Resource(int resourceId,
-                   int ownerId,
-                   ImportanceLevel importance,
-                   const std::string &displayName)
+int Resource::nextId = 100; // Starting default for resource IDs
+
+// Auto-ID Constructor for new items
+Resource::Resource(int ownerId, ImportanceLevel importance, const std::string &displayName)
     : displayName(displayName),
-      resourceId(resourceId),
+      resourceId(nextId++), // Assigns current nextId and increments it
       ownerId(ownerId),
       status(Status::AVAILABLE),
       importance(importance),
@@ -14,42 +14,26 @@ Resource::Resource(int resourceId,
 {
 }
 
-int Resource::getResourceId() const
+// Manual ID Constructor for loading from files
+Resource::Resource(int resourceId, int ownerId, ImportanceLevel importance, const std::string &displayName)
+    : displayName(displayName),
+      resourceId(resourceId), // Uses provided ID
+      ownerId(ownerId),
+      status(Status::AVAILABLE),
+      importance(importance),
+      minTrustRequired(0),
+      maxLoanDuration(30)
 {
-    return resourceId;
 }
 
-int Resource::getOwnerId() const
-{
-    return ownerId;
-}
+void Resource::setNextId(int id) { nextId = id; }
 
-Resource::Status Resource::getStatus() const
-{
-    return status;
-}
+int Resource::getResourceId() const { return resourceId; }
+int Resource::getOwnerId() const { return ownerId; }
+Resource::Status Resource::getStatus() const { return status; }
+Resource::ImportanceLevel Resource::getImportance() const { return importance; }
+std::string Resource::getDisplayName() const { return displayName; }
+int Resource::getMinTrustRequired() const { return minTrustRequired; }
+int Resource::getMaxLoanDuration() const { return maxLoanDuration; }
 
-Resource::ImportanceLevel Resource::getImportance() const
-{
-    return importance;
-}
-
-std::string Resource::getDisplayName() const
-{
-    return displayName;
-}
-
-int Resource::getMinTrustRequired() const
-{
-    return minTrustRequired;
-}
-
-int Resource::getMaxLoanDuration() const
-{
-    return maxLoanDuration;
-}
-
-void Resource::setStatus(Status newStatus)
-{
-    status = newStatus;
-}
+void Resource::setStatus(Status newStatus) { status = newStatus; }

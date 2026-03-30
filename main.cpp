@@ -1,6 +1,7 @@
 #include <iostream>
 #include <vector>
 #include <string>
+#include <limits> 
 
 #include "Marketplace.h"
 #include "User.h"
@@ -8,24 +9,17 @@
 #include "LoanTransaction.h"
 #include "Electronic.h"
 #include "LabGear.h"
+
 using namespace std;
 
 int main()
 {
     Marketplace marketplace;
-    vector<User*> allUsers;
-    vector<Resource*> allResources;
 
-    //load users
+    // 1. Load data and synchronize all ID counters internally
     marketplace.loadUsers("users.txt");
     marketplace.loadResources("items.txt");
-    // copy loaded users into local list
-    for(User* u : marketplace.getUsers())
-    {
-        allUsers.push_back(u);
-    }
-    int nextUserId = 1;//placeholders currently
-    int nextResourceId = 100;
+    marketplace.loadTransactions("transactions.txt");
 
     User* currentUser = nullptr;
 
@@ -40,7 +34,12 @@ int main()
             cout << "Choice: ";
 
             int choice;
-            cin >> choice;
+            if (!(cin >> choice)) {
+                cin.clear();
+                cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                continue;
+            }
+            cin.ignore(numeric_limits<streamsize>::max(), '\n'); 
 
             if(choice == 0) break;
 
@@ -51,14 +50,11 @@ int main()
                 cin >> name;
                 cout << "Enter password: ";
                 cin >> pass;
-
-                User* u = new User(nextUserId++, name, pass);
-                allUsers.push_back(u);
+                User* u = new User(name, pass);
                 marketplace.addUser(u);
-
                 marketplace.saveUsers("users.txt");
 
-                cout << "Registered successfully.\n";
+                cout << "Registered successfully. Your ID is: " << u->getUserId() << "\n";
             }
             else if(choice == 2)
             {
@@ -69,7 +65,7 @@ int main()
                 cin >> pass;
 
                 bool found = false;
-                for(User* u : allUsers)
+                for(User* u : marketplace.getUsers())
                 {
                     if(u->getName() == name && u->checkPassword(pass))
                     {
@@ -80,10 +76,7 @@ int main()
                     }
                 }
 
-                if(!found)
-                {
-                    cout << "Invalid credentials.\n";
-                }
+                if(!found) cout << "Invalid credentials.\n";
             }
         }
         else
@@ -99,6 +92,7 @@ int main()
 
             int choice;
             cin >> choice;
+            cin.ignore(numeric_limits<streamsize>::max(), '\n'); 
 
             if(choice == 4)
             {
@@ -112,16 +106,16 @@ int main()
                 int edition;
 
                 cout << "Title: ";
-                getline(cin, title);
+                getline(cin, title); 
                 cout << "Author: ";
-                cin >> author;
+                getline(cin, author);
                 cout << "ISBN: ";
                 cin >> isbn;
                 cout << "Edition: ";
                 cin >> edition;
 
+              
                 Book* b = new Book(
-                    nextResourceId++,
                     currentUser->getUserId(),
                     Resource::ImportanceLevel::MEDIUM,
                     title,
@@ -130,38 +124,29 @@ int main()
                     edition
                 );
 
-                allResources.push_back(b);
                 marketplace.addResource(b);
                 marketplace.saveResources("items.txt");
-                cout << "Book added successfully.\n";
+                cout << "Book added successfully with ID: " << b->getResourceId() << "\n";
             }
-
             else if(choice == 2)
             {
                 cout << "\n--- Available Resources ---\n";
-
                 for(Resource* r : marketplace.getResources())
                 {
                     cout << "ID: " << r->getResourceId()
-                        << " | Owner ID: " << r->getOwnerId()
-                        << " | Status: "
-                        << (r->getStatus() == Resource::Status::AVAILABLE ? "AVAILABLE" : "LOANED");
+                         << " | Owner ID: " << r->getOwnerId()
+                         << " | Status: "
+                         << (r->getStatus() == Resource::Status::AVAILABLE ? "AVAILABLE" : "LOANED");
 
                     if(r->getResourceType() == "Book")
                     {
                         Book* b = dynamic_cast<Book*>(r);
-
-                        cout << " | Type: Book"
-                            << " | Title: " << b->getTitle()
-                            << " | Author: " << b->getAuthor()
-                            << " | ISBN: " << b->getIsbn()
-                            << " | Edition: " << b->getEdition();
+                        cout << " | Type: Book | Title: " << b->getTitle() 
+                             << " | Author: " << b->getAuthor();
                     }
-
                     cout << endl;
                 }
             }
-
             else if(choice == 3)
             {
                 int rid;
@@ -171,39 +156,29 @@ int main()
                 Resource* target = nullptr;
                 for(Resource* r : marketplace.getResources())
                 {
-                    if(r->getResourceId() == rid)
-                    {
-                        target = r;
-                        break;
-                    }
+                    if(r->getResourceId() == rid) { target = r; break; }
                 }
 
-                if(target == nullptr)
-                {
+                if(target == nullptr) {
                     cout << "Invalid resource ID.\n";
                     continue;
                 }
 
+                // Request loan (dates can be dynamic in future steps)
                 LoanTransaction* tx = marketplace.requestLoan(
-                    currentUser,
-                    target,
-                    "2026-01-01",
-                    "2026-01-10"
+                    currentUser, target, "2026-01-01", "2026-01-10"
                 );
 
-                if(tx == nullptr)
-                {
-                    cout << "Loan request failed.\n";
-                }
-                else
-                {
-                    cout << "Loan approved.\n";
-                }
+                if(tx == nullptr) cout << "Loan request failed (Check trust or availability).\n";
+                else cout << "Loan approved!\n";
             }
         }
     }
-    cout << "Exiting program.\n";
+
+    cout << "Exiting program. Saving data...\n";
     marketplace.saveUsers("users.txt");
     marketplace.saveResources("items.txt");
+    marketplace.saveTransactions("transactions.txt"); // Ensure transactions are saved
+    
     return 0;
 }

@@ -5,54 +5,43 @@
 
 class Resource
 {
-    public:
+public:
+    enum class Status { AVAILABLE, LOANED, OVERDUE };
+    enum class ImportanceLevel { LOW, MEDIUM, HIGH };
 
-    //life cycle of a product/resource
-    enum class Status
-    {
-        AVAILABLE,
-        LOANED,
-        OVERDUE,
-    };
-    //Importance-Level associated with a resource
-    enum class ImportanceLevel
-    {
-        LOW,
-        MEDIUM,
-        HIGH,
-    };
-
-    protected:
-
+protected:
     std::string displayName;
     int resourceId;
     int ownerId;
     Status status;
     ImportanceLevel importance;
-    //owner controlled rules
     int minTrustRequired;
     int maxLoanDuration;
 
-    public:
+private:
+    static int nextId; // Added to track the next available ID internally
 
-    //constructor
-    Resource(int resourceId,int ownerId,ImportanceLevel importance,const std::string &displayName);
+public:
+    // Constructor 1: For new resources (Auto-ID)
+    Resource(int ownerId, ImportanceLevel importance, const std::string &displayName);
+    
+    // Constructor 2: For loading existing resources (Manual ID)
+    Resource(int resourceId, int ownerId, ImportanceLevel importance, const std::string &displayName);
+    
+    static void setNextId(int id);
     virtual ~Resource(){};
 
-    //getters
+    // Getters
     int getResourceId() const;
     int getOwnerId() const;
     Status getStatus() const;
     ImportanceLevel getImportance() const;
     std::string getDisplayName() const;
-
-    //owner rules
     int getMinTrustRequired() const;
     int getMaxLoanDuration() const;
 
-    //status change
+    // Status management
     void setStatus(Status newStatus);
-
     virtual std::string getResourceType() const = 0;
 };
 

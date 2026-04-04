@@ -2,7 +2,6 @@
 #include <vector>
 #include <string>
 #include <limits> 
-
 #include "Marketplace.h"
 #include "User.h"
 #include "Book.h"
@@ -15,9 +14,12 @@ using namespace std;
 int main()
 {
     Marketplace marketplace;
+    
+    // Initial data loading
     marketplace.loadUsers("users.txt");
     marketplace.loadResources("items.txt");
     marketplace.loadTransactions("transactions.txt");
+    marketplace.loadNotifications("notifications.txt");
 
     User* currentUser = nullptr;
 
@@ -37,6 +39,7 @@ int main()
             cin.ignore(numeric_limits<streamsize>::max(), '\n'); 
 
             if (choice == 0) break;
+
             if (choice == 1)
             {
                 string n, p; cout << "Enter name: "; cin >> n; cout << "Enter password: "; cin >> p;
@@ -51,8 +54,17 @@ int main()
                     if (u->getName() == n && u->checkPassword(p))
                     {
                         currentUser = u;
-                        marketplace.updateOverdueStatus("2026-04-04"); // Current date simulation
-                        cout << "Login successful.\n";
+                        marketplace.updateOverdueStatus("2026-04-04");
+                        
+                        // Check for persistent notifications on login
+                        auto notes = marketplace.getNotifications(u->getUserId());
+                        if (!notes.empty())
+                        {
+                            cout << "\n--- UNREAD NOTIFICATIONS ---\n";
+                            for (const auto& note : notes) cout << "[!] " << note << endl;
+                            marketplace.clearNotifications(u->getUserId());
+                            cout << "---------------------------\n";
+                        }
                         break;
                     }
                 }
@@ -62,10 +74,11 @@ int main()
         else
         {
             cout << "\nLogged in: " << currentUser->getName() << " | Trust: " << currentUser->getTrustPoints() << "\n";
-            cout << "1. Add Book\n2. View Resources\n3. Request Loan\n4. Return Resource\n5. Logout\nChoice: ";
+            cout << "1. Add Book\n2. View Resources\n3. Request Loan\n4. Return Resource\n5. View Inbox\n6. Logout\nChoice: ";
             int choice; cin >> choice; cin.ignore(numeric_limits<streamsize>::max(), '\n');
 
-            if (choice == 5) { currentUser = nullptr; continue; }
+            if (choice == 6) { currentUser = nullptr; continue; }
+            
             if (choice == 1)
             {
                 string t, a, i; int e;
@@ -114,8 +127,25 @@ int main()
                 }
                 else cout << "No active loan found.\n";
             }
+            else if (choice == 5)
+            {
+                auto notes = marketplace.getNotifications(currentUser->getUserId());
+                if (notes.empty()) cout << "Your inbox is empty.\n";
+                else
+                {
+                    cout << "\n--- YOUR INBOX ---\n";
+                    for (const auto& note : notes) cout << ">> " << note << endl;
+                    marketplace.clearNotifications(currentUser->getUserId());
+                }
+            }
         }
     }
-    marketplace.saveUsers("users.txt"); marketplace.saveResources("items.txt"); marketplace.saveTransactions("transactions.txt");
+    
+    // Save all data including notifications before closing
+    marketplace.saveUsers("users.txt");
+    marketplace.saveResources("items.txt");
+    marketplace.saveTransactions("transactions.txt");
+    marketplace.saveNotifications("notifications.txt"); 
+    
     return 0;
 }

@@ -4,23 +4,32 @@
 #include "Resource.h"
 #include <string>
 
-class LabGear:public Resource
+class LabGear : public Resource
 {
-    private:
+private:
     std::string category;
     int safetyRating;
     bool requiresTraining;
-    public:
+
+public:
+    // Constructor for new items (Auto-ID)
+    LabGear(int ownerId,
+            ImportanceLevel importance,
+            const std::string &displayName,
+            const std::string &category,
+            int safetyRating,
+            bool requiresTraining);
+
+    // Constructor for loading existing items (Manual ID)
     LabGear(int resourceId,
             int ownerId,
             ImportanceLevel importance,
             const std::string &displayName,
             const std::string &category,
             int safetyRating,
-            bool requiresTraining
-            );
+            bool requiresTraining);
 
-    //getters
+    // Getters
     std::string getCatergory() const;
     int getSafetyRating() const;
     bool needsTraining() const;

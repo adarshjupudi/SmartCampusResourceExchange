@@ -28,7 +28,8 @@ public:
                                  const std::string& startDate,
                                  const std::string& dueDate);
 
-    // getters 
+    void updateOverdueStatus(const std::string& currentDate);
+
     const std::vector<User*>& getUsers() const;
     const std::vector<Resource*>& getResources() const;
     const std::vector<LoanTransaction*>& getTransactions() const;

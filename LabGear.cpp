@@ -1,6 +1,5 @@
 #include "LabGear.h"
 
-// Auto-ID version
 LabGear::LabGear(int ownerId,
                  ImportanceLevel importance,
                  const std::string &displayName,
@@ -14,7 +13,6 @@ LabGear::LabGear(int ownerId,
     this->requiresTraining = requiresTraining;
 }
 
-// Manual ID version
 LabGear::LabGear(int resourceId,
                  int ownerId,
                  ImportanceLevel importance,

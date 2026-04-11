@@ -32,7 +32,6 @@ public:
                bool workingCondition,
                bool batteryIncluded);
 
-    // Getters
     std::string getBrand() const;
     std::string getModel() const;
     bool isWorking() const;

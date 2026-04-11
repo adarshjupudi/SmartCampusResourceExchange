@@ -2,6 +2,10 @@
 #include <vector>
 #include <string>
 #include <limits> 
+#include <chrono>
+#include <iomanip>
+#include <sstream>
+
 #include "Marketplace.h"
 #include "User.h"
 #include "Book.h"
@@ -11,11 +15,19 @@
 
 using namespace std;
 
+// Helper to get actual current date in YYYY-MM-DD
+string getCurrentDate()
+{
+    auto now = chrono::system_clock::now();
+    time_t in_time_t = chrono::system_clock::to_time_t(now);
+    stringstream ss;
+    ss << put_time(localtime(&in_time_t), "%Y-%m-%d");
+    return ss.str();
+}
+
 int main()
 {
     Marketplace marketplace;
-    
-    // Initial data loading
     marketplace.loadUsers("users.txt");
     marketplace.loadResources("items.txt");
     marketplace.loadTransactions("transactions.txt");
@@ -30,40 +42,33 @@ int main()
             cout << "\n=== SMART CAMPUS RESOURCE EXCHANGE ===\n";
             cout << "1. Register\n2. Login\n0. Exit\nChoice: ";
             int choice;
-            if (!(cin >> choice))
-            {
-                cin.clear();
-                cin.ignore(numeric_limits<streamsize>::max(), '\n');
-                continue;
-            }
+            if (!(cin >> choice)) { cin.clear(); cin.ignore(numeric_limits<streamsize>::max(), '\n'); continue; }
             cin.ignore(numeric_limits<streamsize>::max(), '\n'); 
 
             if (choice == 0) break;
-
-            if (choice == 1)
+            if (choice == 1) 
             {
                 string n, p; cout << "Enter name: "; cin >> n; cout << "Enter password: "; cin >> p;
                 User* u = new User(n, p); marketplace.addUser(u); marketplace.saveUsers("users.txt");
                 cout << "Registered successfully. ID: " << u->getUserId() << "\n";
-            }
-            else if (choice == 2)
+            } 
+            else if (choice == 2) 
             {
                 string n, p; cout << "Enter name: "; cin >> n; cout << "Enter password: "; cin >> p;
-                for (User* u : marketplace.getUsers())
+                const std::vector<User*>& users = marketplace.getUsers();
+                for (size_t i = 0; i < users.size(); ++i) 
                 {
-                    if (u->getName() == n && u->checkPassword(p))
+                    if (users[i]->getName() == n && users[i]->checkPassword(p)) 
                     {
-                        currentUser = u;
-                        marketplace.updateOverdueStatus("2026-04-04");
+                        currentUser = users[i];
+                        marketplace.updateOverdueStatus(getCurrentDate()); // Dynamic date
                         
-                        // Check for persistent notifications on login
-                        auto notes = marketplace.getNotifications(u->getUserId());
+                        auto notes = marketplace.getNotifications(currentUser->getUserId());
                         if (!notes.empty())
                         {
                             cout << "\n--- UNREAD NOTIFICATIONS ---\n";
-                            for (const auto& note : notes) cout << "[!] " << note << endl;
-                            marketplace.clearNotifications(u->getUserId());
-                            cout << "---------------------------\n";
+                            for (size_t j = 0; j < notes.size(); ++j) cout << "[!] " << notes[j] << endl;
+                            marketplace.clearNotifications(currentUser->getUserId());
                         }
                         break;
                     }
@@ -78,74 +83,66 @@ int main()
             int choice; cin >> choice; cin.ignore(numeric_limits<streamsize>::max(), '\n');
 
             if (choice == 6) { currentUser = nullptr; continue; }
-            
-            if (choice == 1)
+            if (choice == 1) 
             {
                 string t, a, i; int e;
                 cout << "Title: "; getline(cin, t); cout << "Author: "; getline(cin, a); cout << "ISBN: "; cin >> i; cout << "Edition: "; cin >> e;
                 Book* b = new Book(currentUser->getUserId(), Resource::ImportanceLevel::MEDIUM, t, a, i, e);
                 marketplace.addResource(b); marketplace.saveResources("items.txt");
                 cout << "Book added. ID: " << b->getResourceId() << "\n";
-            }
-            else if (choice == 2)
+            } 
+            else if (choice == 2) 
             {
-                for (Resource* r : marketplace.getResources())
+                const std::vector<Resource*>& res = marketplace.getResources();
+                for (size_t i = 0; i < res.size(); ++i) 
                 {
-                    string s = (r->getStatus() == Resource::Status::AVAILABLE) ? "AVAILABLE" : 
-                               (r->getStatus() == Resource::Status::OVERDUE ? "OVERDUE" : "LOANED");
-                    cout << "ID: " << r->getResourceId() << " | Status: " << s;
-                    if (r->getResourceType() == "Book")
-                    {
-                        Book* b = dynamic_cast<Book*>(r);
-                        cout << " | Book: " << b->getTitle();
+                    string s = (res[i]->getStatus() == Resource::Status::AVAILABLE) ? "AVAILABLE" : 
+                               (res[i]->getStatus() == Resource::Status::OVERDUE ? "OVERDUE" : "LOANED");
+                    cout << "ID: " << res[i]->getResourceId() << " | Status: " << s;
+                    if (res[i]->getResourceType() == "Book") 
+                    { 
+                        Book* b = dynamic_cast<Book*>(res[i]); cout << " | Book: " << b->getTitle(); 
                     }
                     cout << endl;
                 }
-            }
-            else if (choice == 3)
+            } 
+            else if (choice == 3) 
             {
                 int rid; cout << "Enter Resource ID: "; cin >> rid;
                 Resource* target = nullptr;
-                for (Resource* r : marketplace.getResources()) if (r->getResourceId() == rid) target = r;
+                const std::vector<Resource*>& res = marketplace.getResources();
+                for (size_t i = 0; i < res.size(); ++i) if (res[i]->getResourceId() == rid) target = res[i];
                 if (!target) { cout << "Invalid ID.\n"; continue; }
-                if (marketplace.requestLoan(currentUser, target, "2026-04-01", "2026-04-10")) cout << "Loan approved!\n";
+                
+                if (marketplace.requestLoan(currentUser, target, getCurrentDate(), "2026-04-20")) cout << "Loan approved!\n";
                 else cout << "Request failed.\n";
-            }
-            else if (choice == 4)
+            } 
+            else if (choice == 4) 
             {
                 int rid; cout << "Enter Resource ID to return: "; cin >> rid;
                 LoanTransaction* active = nullptr;
-                for (LoanTransaction* t : marketplace.getTransactions())
+                const std::vector<LoanTransaction*>& txs = marketplace.getTransactions();
+                for (size_t i = 0; i < txs.size(); ++i) if (txs[i]->getResource()->getResourceId() == rid && txs[i]->getBorrower()->getUserId() == currentUser->getUserId() && !txs[i]->isReturned()) active = txs[i];
+                if (active) 
                 {
-                    if (t->getResource()->getResourceId() == rid && t->getBorrower()->getUserId() == currentUser->getUserId() && !t->isReturned()) active = t;
-                }
-                if (active)
-                {
-                    active->markReturned("2026-04-04");
+                    active->markReturned(getCurrentDate());
                     cout << "Resource returned successfully.\n";
                     marketplace.saveResources("items.txt"); marketplace.saveTransactions("transactions.txt");
-                }
+                } 
                 else cout << "No active loan found.\n";
             }
             else if (choice == 5)
             {
                 auto notes = marketplace.getNotifications(currentUser->getUserId());
-                if (notes.empty()) cout << "Your inbox is empty.\n";
+                if (notes.empty()) cout << "No notifications.\n";
                 else
                 {
-                    cout << "\n--- YOUR INBOX ---\n";
-                    for (const auto& note : notes) cout << ">> " << note << endl;
+                    for (size_t i = 0; i < notes.size(); ++i) cout << ">> " << notes[i] << endl;
                     marketplace.clearNotifications(currentUser->getUserId());
                 }
             }
         }
     }
-    
-    // Save all data including notifications before closing
-    marketplace.saveUsers("users.txt");
-    marketplace.saveResources("items.txt");
-    marketplace.saveTransactions("transactions.txt");
-    marketplace.saveNotifications("notifications.txt"); 
-    
+    marketplace.saveUsers("users.txt"); marketplace.saveResources("items.txt"); marketplace.saveTransactions("transactions.txt"); marketplace.saveNotifications("notifications.txt");
     return 0;
 }

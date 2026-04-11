@@ -1,6 +1,5 @@
 #include "Electronic.h"
 
-// Auto-ID version
 Electronic::Electronic(int ownerId,
                        ImportanceLevel importance,
                        const std::string &displayName,
@@ -16,7 +15,6 @@ Electronic::Electronic(int ownerId,
     this->batteryIncluded = batteryIncluded;
 }
 
-// Manual ID version
 Electronic::Electronic(int resourceId,
                        int ownerId,
                        ImportanceLevel importance,

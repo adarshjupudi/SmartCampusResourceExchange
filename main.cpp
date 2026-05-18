@@ -101,10 +101,10 @@ int main()
         else
         {
             cout << "\nLogged in: " << currentUser->getName() << " | Trust: " << currentUser->getTrustPoints() << "\n";
-            cout << "1. Add Book\n2. View Resources\n3. Request Loan\n4. Return Resource\n5. View Inbox\n6. Add Pre-Loan Evidence\n7. Logout\nChoice: ";
+            cout << "1. Add Book\n2. View Resources\n3. Request Loan\n4. Return Resource\n5. View Inbox\n6. Add Pre-Loan Evidence\n7. Set Resource Rules\n8. Logout\nChoice: ";
             int choice; cin >> choice; cin.ignore(numeric_limits<streamsize>::max(), '\n');
 
-            if (choice == 7)
+            if (choice == 8)
             {
                 currentUser = nullptr;
                 continue;
@@ -124,7 +124,9 @@ int main()
                 {
                     string s = (res[i]->getStatus() == Resource::Status::AVAILABLE) ? "AVAILABLE" : 
                                (res[i]->getStatus() == Resource::Status::OVERDUE ? "OVERDUE" : "LOANED");
-                    cout << "ID: " << res[i]->getResourceId() << " | Status: " << s;
+                    cout << "ID: " << res[i]->getResourceId() << " | Status: " << s 
+                         << " | Req Trust: " << res[i]->getMinTrustRequired() 
+                         << " | Max Days: " << res[i]->getMaxLoanDuration();
                     if (res[i]->getResourceType() == "Book") 
                     { 
                         Book* b = dynamic_cast<Book*>(res[i]);
@@ -150,7 +152,7 @@ int main()
                 }
                 else
                 {
-                    cout << "Request failed.\n";
+                    cout << "Request failed (Check item availability or your trust tier).\n";
                 }
             } 
             else if (choice == 4) 
@@ -170,7 +172,6 @@ int main()
                     active->markReturned(getCurrentDate());
                     cout << "Resource marked returned successfully.\n";
                     
-                    // Capture dynamic borrower post-return evidence paths
                     string evPath;
                     cout << "Enter post-return condition image/file path (or type 'done' to skip): ";
                     while (getline(cin, evPath) && evPath != "done")
@@ -252,6 +253,60 @@ int main()
                 else
                 {
                     cout << "Invalid Transaction ID or permissions denied.\n";
+                }
+            }
+            else if (choice == 7) // NEW: Set Resource Rules
+            {
+                cout << "\n--- Your Listed Resources ---\n";
+                const std::vector<Resource*>& res = marketplace.getResources();
+                bool ownsItems = false;
+                for (size_t i = 0; i < res.size(); ++i)
+                {
+                    if (res[i]->getOwnerId() == currentUser->getUserId())
+                    {
+                        cout << "ID: " << res[i]->getResourceId() << " | Name: " << res[i]->getDisplayName() 
+                             << " | Current Trust Req: " << res[i]->getMinTrustRequired() 
+                             << " | Max Loan Days: " << res[i]->getMaxLoanDuration() << "\n";
+                        ownsItems = true;
+                    }
+                }
+                
+                if (!ownsItems)
+                {
+                    cout << "You have not listed any resources yet.\n";
+                    continue;
+                }
+
+                int targetId;
+                cout << "Enter Resource ID to modify rules for: ";
+                cin >> targetId;
+                
+                Resource* targetRes = nullptr;
+                for (size_t i = 0; i < res.size(); ++i)
+                {
+                    if (res[i]->getResourceId() == targetId && res[i]->getOwnerId() == currentUser->getUserId())
+                    {
+                        targetRes = res[i];
+                    }
+                }
+
+                if (targetRes)
+                {
+                    int newTrust, newDuration;
+                    cout << "Enter Minimum Trust Points Required to Borrow: ";
+                    cin >> newTrust;
+                    cout << "Enter Maximum Loan Duration Allowed (Days): ";
+                    cin >> newDuration;
+
+                    targetRes->setMinTrustRequired(newTrust);
+                    targetRes->setMaxLoanDuration(newDuration);
+
+                    marketplace.saveResources("items.txt");
+                    cout << "Resource parameters modified and persisted successfully!\n";
+                }
+                else
+                {
+                    cout << "Invalid Resource ID or access denied.\n";
                 }
             }
         }

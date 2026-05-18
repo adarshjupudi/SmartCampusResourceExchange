@@ -194,17 +194,17 @@ void Marketplace::saveResources(const std::string& filename)
         if (r->getResourceType() == "Book")
         {
             Book* b = dynamic_cast<Book*>(r);
-            file << "BOOK|" << b->getResourceId() << "|" << b->getOwnerId() << "|" << b->getTitle() << "|" << b->getAuthor() << "|" << b->getIsbn() << "|" << b->getEdition() << "|" << status << "\n";
+            file << "BOOK|" << b->getResourceId() << "|" << b->getOwnerId() << "|" << b->getTitle() << "|" << b->getAuthor() << "|" << b->getIsbn() << "|" << b->getEdition() << "|" << status << "|" << b->getMinTrustRequired() << "|" << b->getMaxLoanDuration() << "\n";
         }
         else if (r->getResourceType() == "Electronic")
         {
             Electronic* e = dynamic_cast<Electronic*>(r);
-            file << "ELECTRONIC|" << e->getResourceId() << "|" << e->getOwnerId() << "|" << e->getBrand() << "|" << e->getModel() << "|" << e->isWorking() << "|" << e->hasBattery() << "|" << status << "\n";
+            file << "ELECTRONIC|" << e->getResourceId() << "|" << e->getOwnerId() << "|" << e->getBrand() << "|" << e->getModel() << "|" << e->isWorking() << "|" << e->hasBattery() << "|" << status << "|" << e->getMinTrustRequired() << "|" << e->getMaxLoanDuration() << "\n";
         }
         else if (r->getResourceType() == "LabGear")
         {
             LabGear* g = dynamic_cast<LabGear*>(r);
-            file << "LABGEAR|" << g->getResourceId() << "|" << g->getOwnerId() << "|" << g->getCatergory() << "|" << g->getSafetyRating() << "|" << g->needsTraining() << "|" << status << "\n";
+            file << "LABGEAR|" << g->getResourceId() << "|" << g->getOwnerId() << "|" << g->getCatergory() << "|" << g->getSafetyRating() << "|" << g->needsTraining() << "|" << status << "|" << g->getMinTrustRequired() << "|" << g->getMaxLoanDuration() << "\n";
         }
     }
 }
@@ -225,8 +225,9 @@ void Marketplace::loadResources(const std::string& filename)
         std::getline(ss, type, '|');
         if (type == "BOOK")
         {
-            std::string idStr, ownerStr, title, author, isbn, edStr, statusStr;
+            std::string idStr, ownerStr, title, author, isbn, edStr, statusStr, trustStr, durStr;
             std::getline(ss, idStr, '|'); std::getline(ss, ownerStr, '|'); std::getline(ss, title, '|'); std::getline(ss, author, '|'); std::getline(ss, isbn, '|'); std::getline(ss, edStr, '|'); std::getline(ss, statusStr, '|');
+            
             int id = std::stoi(idStr);
             if (id > maxId)
             {
@@ -235,11 +236,18 @@ void Marketplace::loadResources(const std::string& filename)
             Book* b = new Book(id, std::stoi(ownerStr), Resource::ImportanceLevel::MEDIUM, title, author, isbn, std::stoi(edStr));
             if (statusStr == "LOANED") b->setStatus(Resource::Status::LOANED);
             else if (statusStr == "OVERDUE") b->setStatus(Resource::Status::OVERDUE);
+            
+            // Extract evolved database fields if present
+            if (std::getline(ss, trustStr, '|') && std::getline(ss, durStr, '|'))
+            {
+                b->setMinTrustRequired(std::stoi(trustStr));
+                b->setMaxLoanDuration(std::stoi(durStr));
+            }
             resources.push_back(b);
         }
         else if (type == "ELECTRONIC")
         {
-            std::string idStr, ownerStr, brand, model, workStr, battStr, statusStr;
+            std::string idStr, ownerStr, brand, model, workStr, battStr, statusStr, trustStr, durStr;
             std::getline(ss, idStr, '|'); std::getline(ss, ownerStr, '|'); std::getline(ss, brand, '|'); std::getline(ss, model, '|'); std::getline(ss, workStr, '|'); std::getline(ss, battStr, '|'); std::getline(ss, statusStr, '|');
             int id = std::stoi(idStr);
             if (id > maxId)
@@ -249,11 +257,17 @@ void Marketplace::loadResources(const std::string& filename)
             Electronic* e = new Electronic(id, std::stoi(ownerStr), Resource::ImportanceLevel::MEDIUM, brand, brand, model, std::stoi(workStr), std::stoi(battStr));
             if (statusStr == "LOANED") e->setStatus(Resource::Status::LOANED);
             else if (statusStr == "OVERDUE") e->setStatus(Resource::Status::OVERDUE);
+            
+            if (std::getline(ss, trustStr, '|') && std::getline(ss, durStr, '|'))
+            {
+                e->setMinTrustRequired(std::stoi(trustStr));
+                e->setMaxLoanDuration(std::stoi(durStr));
+            }
             resources.push_back(e);
         }
         else if (type == "LABGEAR")
         {
-            std::string idStr, ownerStr, cat, safeStr, trainStr, statusStr;
+            std::string idStr, ownerStr, cat, safeStr, trainStr, statusStr, trustStr, durStr;
             std::getline(ss, idStr, '|'); std::getline(ss, ownerStr, '|'); std::getline(ss, cat, '|'); std::getline(ss, safeStr, '|'); std::getline(ss, trainStr, '|'); std::getline(ss, statusStr, '|');
             int id = std::stoi(idStr);
             if (id > maxId)
@@ -263,6 +277,12 @@ void Marketplace::loadResources(const std::string& filename)
             LabGear* g = new LabGear(id, std::stoi(ownerStr), Resource::ImportanceLevel::MEDIUM, cat, cat, std::stoi(safeStr), std::stoi(trainStr));
             if (statusStr == "LOANED") g->setStatus(Resource::Status::LOANED);
             else if (statusStr == "OVERDUE") g->setStatus(Resource::Status::OVERDUE);
+            
+            if (std::getline(ss, trustStr, '|') && std::getline(ss, durStr, '|'))
+            {
+                g->setMinTrustRequired(std::stoi(trustStr));
+                g->setMaxLoanDuration(std::stoi(durStr));
+            }
             resources.push_back(g);
         }
     }
@@ -281,7 +301,6 @@ void Marketplace::saveTransactions(const std::string& filename)
         else if (t->getStatus() == Transaction::Status::COMPLETED) status = "COMPLETED";
         else status = "FAILED";
         
-        // Flatten pre-loan evidence vector into a comma-separated sub-string
         std::string preEvStr = "";
         const std::vector<std::string>& preEv = t->getPreLoanEvidence();
         for (size_t j = 0; j < preEv.size(); ++j)
@@ -290,7 +309,6 @@ void Marketplace::saveTransactions(const std::string& filename)
             if (j < preEv.size() - 1) preEvStr += ",";
         }
 
-        // Flatten post-return evidence vector into a comma-separated sub-string
         std::string postEvStr = "";
         const std::vector<std::string>& postEv = t->getPostReturnEvidence();
         for (size_t j = 0; j < postEv.size(); ++j)
@@ -299,9 +317,7 @@ void Marketplace::saveTransactions(const std::string& filename)
             if (j < postEv.size() - 1) postEvStr += ",";
         }
 
-        file << "LOAN|" << t->getTransactionId() << "|" << t->getBorrower()->getUserId() << "|" 
-             << t->getResource()->getResourceId() << "|" << t->getStartDate() << "|" << t->getDueDate() << "|" 
-             << status << "|" << preEvStr << "|" << postEvStr << "\n";
+        file << "LOAN|" << t->getTransactionId() << "|" << t->getBorrower()->getUserId() << "|" << t->getResource()->getResourceId() << "|" << t->getStartDate() << "|" << t->getDueDate() << "|" << status << "|" << preEvStr << "|" << postEvStr << "\n";
     }
 }
 
@@ -322,8 +338,7 @@ void Marketplace::loadTransactions(const std::string& filename)
         if (type == "LOAN")
         {
             std::string tidS, bIdS, rIdS, start, due, status, preEvStr, postEvStr;
-            std::getline(ss, tidS, '|'); std::getline(ss, bIdS, '|'); std::getline(ss, rIdS, '|'); 
-            std::getline(ss, start, '|'); std::getline(ss, due, '|'); std::getline(ss, status, '|');
+            std::getline(ss, tidS, '|'); std::getline(ss, bIdS, '|'); std::getline(ss, rIdS, '|'); std::getline(ss, start, '|'); std::getline(ss, due, '|'); std::getline(ss, status, '|');
             std::getline(ss, preEvStr, '|'); std::getline(ss, postEvStr, '|');
 
             int tid = std::stoi(tidS);
@@ -351,7 +366,6 @@ void Marketplace::loadTransactions(const std::string& filename)
             {
                 LoanTransaction* t = new LoanTransaction(tid, borrower, owner, res, start, due);
                 
-                // Parse nested comma-separated pre-loan evidence elements
                 std::stringstream preSS(preEvStr);
                 std::string path;
                 while (std::getline(preSS, path, ','))
@@ -359,7 +373,6 @@ void Marketplace::loadTransactions(const std::string& filename)
                     if (!path.empty()) t->addPreLoanEvidence(path);
                 }
 
-                // Parse nested comma-separated post-return evidence elements
                 std::stringstream postSS(postEvStr);
                 while (std::getline(postSS, path, ','))
                 {

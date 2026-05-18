@@ -19,7 +19,7 @@ protected:
     int maxLoanDuration;
 
 private:
-    static int nextId; // Added to track the next available ID internally
+    static int nextId;
 
 public:
     // Constructor 1: For new resources (Auto-ID)
@@ -39,6 +39,10 @@ public:
     std::string getDisplayName() const;
     int getMinTrustRequired() const;
     int getMaxLoanDuration() const;
+
+    // Setters (Mutators with data safety bounds)
+    void setMinTrustRequired(int trust);
+    void setMaxLoanDuration(int duration);
 
     // Status management
     void setStatus(Status newStatus);

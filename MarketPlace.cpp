@@ -8,21 +8,25 @@
 #include <fstream>
 #include <sstream>
 
-Marketplace::Marketplace() : nextTransactionId(1) 
+Marketplace::Marketplace()
+    : nextTransactionId(1)
 {
 }
 
-void Marketplace::addUser(User* user) 
-{ 
-    users.push_back(user); 
+void Marketplace::addUser(User* user)
+{
+    users.push_back(user);
 }
 
-void Marketplace::addResource(Resource* resource) 
-{ 
-    resources.push_back(resource); 
+void Marketplace::addResource(Resource* resource)
+{
+    resources.push_back(resource);
 }
 
-LoanTransaction* Marketplace::requestLoan(User* borrower, Resource* resource, const std::string& startDate, const std::string& dueDate)
+LoanTransaction* Marketplace::requestLoan(User* borrower,
+                                          Resource* resource,
+                                          const std::string& startDate,
+                                          const std::string& dueDate)
 {
     User* owner = nullptr;
     for (size_t i = 0; i < users.size(); ++i)
@@ -33,7 +37,11 @@ LoanTransaction* Marketplace::requestLoan(User* borrower, Resource* resource, co
             break;
         }
     }
-    if (owner == nullptr) return nullptr;
+
+    if (owner == nullptr)
+    {
+        return nullptr;
+    }
 
     LoanTransaction* transaction = new LoanTransaction(nextTransactionId++, borrower, owner, resource, startDate, dueDate);
     bool success = transaction->process();
@@ -44,6 +52,11 @@ LoanTransaction* Marketplace::requestLoan(User* borrower, Resource* resource, co
         addNotification(borrower->getUserId(), "SUCCESS: Loan approved for " + resource->getDisplayName());
         addNotification(owner->getUserId(), "NOTICE: Your item " + resource->getDisplayName() + " was borrowed.");
     }
+    else
+    {
+        addNotification(borrower->getUserId(), "FAILED: Loan request for " + resource->getDisplayName() + " denied.");
+    }
+
     return success ? transaction : nullptr;
 }
 
@@ -98,7 +111,11 @@ void Marketplace::saveNotifications(const std::string& filename)
 void Marketplace::loadNotifications(const std::string& filename)
 {
     std::ifstream file(filename);
-    if (!file) return;
+    if (!file)
+    {
+        return;
+    }
+
     std::string line;
     while (std::getline(file, line))
     {
@@ -111,26 +128,46 @@ void Marketplace::loadNotifications(const std::string& filename)
     }
 }
 
-const std::vector<User*>& Marketplace::getUsers() const { return users; }
-const std::vector<Resource*>& Marketplace::getResources() const { return resources; }
-const std::vector<LoanTransaction*>& Marketplace::getTransactions() const { return transactions; }
+const std::vector<User*>& Marketplace::getUsers() const
+{
+    return users;
+}
+
+const std::vector<Resource*>& Marketplace::getResources() const
+{
+    return resources;
+}
+
+const std::vector<LoanTransaction*>& Marketplace::getTransactions() const
+{
+    return transactions;
+}
 
 void Marketplace::loadUsers(const std::string& filename)
 {
     std::ifstream file(filename);
-    if (!file) return;
+    if (!file)
+    {
+        return;
+    }
     std::string line;
     int maxId = 0;
     while (std::getline(file, line))
     {
         std::stringstream ss(line);
         std::string idStr, name, password, trustStr;
-        std::getline(ss, idStr, '|'); std::getline(ss, name, '|'); std::getline(ss, password, '|'); std::getline(ss, trustStr, '|');
+        std::getline(ss, idStr, '|');
+        std::getline(ss, name, '|');
+        std::getline(ss, password, '|');
+        std::getline(ss, trustStr, '|');
         int id = std::stoi(idStr);
         User* user = new User(id, name, password);
         user->updateTrust(std::stoi(trustStr));
         users.push_back(user);
-        if (id > maxId) maxId = id;
+        if (id > maxId)
+        {
+            maxId = id;
+        }
     }
     User::setNextId(maxId + 1);
 }
@@ -140,7 +177,8 @@ void Marketplace::saveUsers(const std::string& filename)
     std::ofstream file(filename);
     for (size_t i = 0; i < users.size(); ++i)
     {
-        file << users[i]->getUserId() << "|" << users[i]->getName() << "|" << users[i]->getPassword() << "|" << users[i]->getTrustPoints() << "\n";
+        User* user = users[i];
+        file << user->getUserId() << "|" << user->getName() << "|" << user->getPassword() << "|" << user->getTrustPoints() << "\n";
     }
 }
 
@@ -152,17 +190,18 @@ void Marketplace::saveResources(const std::string& filename)
         Resource* r = resources[i];
         std::string status = (r->getStatus() == Resource::Status::AVAILABLE) ? "AVAILABLE" : 
                              (r->getStatus() == Resource::Status::OVERDUE ? "OVERDUE" : "LOANED");
-        if (r->getResourceType() == "Book") 
+        
+        if (r->getResourceType() == "Book")
         {
             Book* b = dynamic_cast<Book*>(r);
             file << "BOOK|" << b->getResourceId() << "|" << b->getOwnerId() << "|" << b->getTitle() << "|" << b->getAuthor() << "|" << b->getIsbn() << "|" << b->getEdition() << "|" << status << "\n";
-        } 
-        else if (r->getResourceType() == "Electronic") 
+        }
+        else if (r->getResourceType() == "Electronic")
         {
             Electronic* e = dynamic_cast<Electronic*>(r);
             file << "ELECTRONIC|" << e->getResourceId() << "|" << e->getOwnerId() << "|" << e->getBrand() << "|" << e->getModel() << "|" << e->isWorking() << "|" << e->hasBattery() << "|" << status << "\n";
-        } 
-        else if (r->getResourceType() == "LabGear") 
+        }
+        else if (r->getResourceType() == "LabGear")
         {
             LabGear* g = dynamic_cast<LabGear*>(r);
             file << "LABGEAR|" << g->getResourceId() << "|" << g->getOwnerId() << "|" << g->getCatergory() << "|" << g->getSafetyRating() << "|" << g->needsTraining() << "|" << status << "\n";
@@ -173,38 +212,54 @@ void Marketplace::saveResources(const std::string& filename)
 void Marketplace::loadResources(const std::string& filename)
 {
     std::ifstream file(filename);
-    if (!file) return;
+    if (!file)
+    {
+        return;
+    }
     std::string line;
     int maxId = 0;
     while (std::getline(file, line))
     {
         std::stringstream ss(line);
-        std::string type; std::getline(ss, type, '|');
-        if (type == "BOOK") 
+        std::string type;
+        std::getline(ss, type, '|');
+        if (type == "BOOK")
         {
             std::string idStr, ownerStr, title, author, isbn, edStr, statusStr;
             std::getline(ss, idStr, '|'); std::getline(ss, ownerStr, '|'); std::getline(ss, title, '|'); std::getline(ss, author, '|'); std::getline(ss, isbn, '|'); std::getline(ss, edStr, '|'); std::getline(ss, statusStr, '|');
-            int id = std::stoi(idStr); if (id > maxId) maxId = id;
+            int id = std::stoi(idStr);
+            if (id > maxId)
+            {
+                maxId = id;
+            }
             Book* b = new Book(id, std::stoi(ownerStr), Resource::ImportanceLevel::MEDIUM, title, author, isbn, std::stoi(edStr));
             if (statusStr == "LOANED") b->setStatus(Resource::Status::LOANED);
             else if (statusStr == "OVERDUE") b->setStatus(Resource::Status::OVERDUE);
             resources.push_back(b);
-        } 
-        else if (type == "ELECTRONIC") 
+        }
+        else if (type == "ELECTRONIC")
         {
             std::string idStr, ownerStr, brand, model, workStr, battStr, statusStr;
             std::getline(ss, idStr, '|'); std::getline(ss, ownerStr, '|'); std::getline(ss, brand, '|'); std::getline(ss, model, '|'); std::getline(ss, workStr, '|'); std::getline(ss, battStr, '|'); std::getline(ss, statusStr, '|');
-            int id = std::stoi(idStr); if (id > maxId) maxId = id;
+            int id = std::stoi(idStr);
+            if (id > maxId)
+            {
+                maxId = id;
+            }
             Electronic* e = new Electronic(id, std::stoi(ownerStr), Resource::ImportanceLevel::MEDIUM, brand, brand, model, std::stoi(workStr), std::stoi(battStr));
             if (statusStr == "LOANED") e->setStatus(Resource::Status::LOANED);
             else if (statusStr == "OVERDUE") e->setStatus(Resource::Status::OVERDUE);
             resources.push_back(e);
-        } 
-        else if (type == "LABGEAR") 
+        }
+        else if (type == "LABGEAR")
         {
             std::string idStr, ownerStr, cat, safeStr, trainStr, statusStr;
             std::getline(ss, idStr, '|'); std::getline(ss, ownerStr, '|'); std::getline(ss, cat, '|'); std::getline(ss, safeStr, '|'); std::getline(ss, trainStr, '|'); std::getline(ss, statusStr, '|');
-            int id = std::stoi(idStr); if (id > maxId) maxId = id;
+            int id = std::stoi(idStr);
+            if (id > maxId)
+            {
+                maxId = id;
+            }
             LabGear* g = new LabGear(id, std::stoi(ownerStr), Resource::ImportanceLevel::MEDIUM, cat, cat, std::stoi(safeStr), std::stoi(trainStr));
             if (statusStr == "LOANED") g->setStatus(Resource::Status::LOANED);
             else if (statusStr == "OVERDUE") g->setStatus(Resource::Status::OVERDUE);
@@ -217,7 +272,7 @@ void Marketplace::loadResources(const std::string& filename)
 void Marketplace::saveTransactions(const std::string& filename)
 {
     std::ofstream file(filename);
-    for (size_t i = 0; i < transactions.size(); ++i) 
+    for (size_t i = 0; i < transactions.size(); ++i)
     {
         LoanTransaction* t = transactions[i];
         std::string status;
@@ -225,31 +280,92 @@ void Marketplace::saveTransactions(const std::string& filename)
         else if (t->getStatus() == Transaction::Status::ACTIVE) status = "ACTIVE";
         else if (t->getStatus() == Transaction::Status::COMPLETED) status = "COMPLETED";
         else status = "FAILED";
-        file << "LOAN|" << t->getTransactionId() << "|" << t->getBorrower()->getUserId() << "|" << t->getResource()->getResourceId() << "|" << t->getStartDate() << "|" << t->getDueDate() << "|" << status << "\n";
+        
+        // Flatten pre-loan evidence vector into a comma-separated sub-string
+        std::string preEvStr = "";
+        const std::vector<std::string>& preEv = t->getPreLoanEvidence();
+        for (size_t j = 0; j < preEv.size(); ++j)
+        {
+            preEvStr += preEv[j];
+            if (j < preEv.size() - 1) preEvStr += ",";
+        }
+
+        // Flatten post-return evidence vector into a comma-separated sub-string
+        std::string postEvStr = "";
+        const std::vector<std::string>& postEv = t->getPostReturnEvidence();
+        for (size_t j = 0; j < postEv.size(); ++j)
+        {
+            postEvStr += postEv[j];
+            if (j < postEv.size() - 1) postEvStr += ",";
+        }
+
+        file << "LOAN|" << t->getTransactionId() << "|" << t->getBorrower()->getUserId() << "|" 
+             << t->getResource()->getResourceId() << "|" << t->getStartDate() << "|" << t->getDueDate() << "|" 
+             << status << "|" << preEvStr << "|" << postEvStr << "\n";
     }
 }
 
 void Marketplace::loadTransactions(const std::string& filename)
 {
     std::ifstream file(filename);
-    if (!file) return;
+    if (!file)
+    {
+        return;
+    }
     std::string line;
     int maxTid = 0;
     while (std::getline(file, line))
     {
         std::stringstream ss(line);
-        std::string type; std::getline(ss, type, '|');
-        if (type == "LOAN") 
+        std::string type;
+        std::getline(ss, type, '|');
+        if (type == "LOAN")
         {
-            std::string tidS, bIdS, rIdS, start, due, status;
-            std::getline(ss, tidS, '|'); std::getline(ss, bIdS, '|'); std::getline(ss, rIdS, '|'); std::getline(ss, start, '|'); std::getline(ss, due, '|'); std::getline(ss, status, '|');
-            int tid = std::stoi(tidS); if (tid > maxTid) maxTid = tid;
+            std::string tidS, bIdS, rIdS, start, due, status, preEvStr, postEvStr;
+            std::getline(ss, tidS, '|'); std::getline(ss, bIdS, '|'); std::getline(ss, rIdS, '|'); 
+            std::getline(ss, start, '|'); std::getline(ss, due, '|'); std::getline(ss, status, '|');
+            std::getline(ss, preEvStr, '|'); std::getline(ss, postEvStr, '|');
+
+            int tid = std::stoi(tidS);
+            if (tid > maxTid)
+            {
+                maxTid = tid;
+            }
             User* borrower = nullptr; User* owner = nullptr; Resource* res = nullptr;
-            for (size_t i = 0; i < users.size(); ++i) if (users[i]->getUserId() == std::stoi(bIdS)) borrower = users[i];
-            for (size_t i = 0; i < resources.size(); ++i) if (resources[i]->getResourceId() == std::stoi(rIdS)) { res = resources[i]; for (size_t j = 0; j < users.size(); ++j) if (users[j]->getUserId() == res->getOwnerId()) owner = users[j]; }
-            if (borrower && owner && res) 
+            for (size_t i = 0; i < users.size(); ++i)
+            {
+                if (users[i]->getUserId() == std::stoi(bIdS)) borrower = users[i];
+            }
+            for (size_t i = 0; i < resources.size(); ++i)
+            {
+                if (resources[i]->getResourceId() == std::stoi(rIdS))
+                {
+                    res = resources[i];
+                    for (size_t j = 0; j < users.size(); ++j)
+                    {
+                        if (users[j]->getUserId() == res->getOwnerId()) owner = users[j];
+                    }
+                }
+            }
+            if (borrower && owner && res)
             {
                 LoanTransaction* t = new LoanTransaction(tid, borrower, owner, res, start, due);
+                
+                // Parse nested comma-separated pre-loan evidence elements
+                std::stringstream preSS(preEvStr);
+                std::string path;
+                while (std::getline(preSS, path, ','))
+                {
+                    if (!path.empty()) t->addPreLoanEvidence(path);
+                }
+
+                // Parse nested comma-separated post-return evidence elements
+                std::stringstream postSS(postEvStr);
+                while (std::getline(postSS, path, ','))
+                {
+                    if (!path.empty()) t->addPostReturnEvidence(path);
+                }
+
                 transactions.push_back(t);
             }
         }

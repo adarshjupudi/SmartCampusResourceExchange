@@ -237,7 +237,6 @@ void Marketplace::loadResources(const std::string& filename)
             if (statusStr == "LOANED") b->setStatus(Resource::Status::LOANED);
             else if (statusStr == "OVERDUE") b->setStatus(Resource::Status::OVERDUE);
             
-            // Extract evolved database fields if present
             if (std::getline(ss, trustStr, '|') && std::getline(ss, durStr, '|'))
             {
                 b->setMinTrustRequired(std::stoi(trustStr));
@@ -299,6 +298,7 @@ void Marketplace::saveTransactions(const std::string& filename)
         if (t->getStatus() == Transaction::Status::PENDING) status = "PENDING";
         else if (t->getStatus() == Transaction::Status::ACTIVE) status = "ACTIVE";
         else if (t->getStatus() == Transaction::Status::COMPLETED) status = "COMPLETED";
+        else if (t->getStatus() == Transaction::Status::DISPUTED) status = "DISPUTED";
         else status = "FAILED";
         
         std::string preEvStr = "";
@@ -317,7 +317,12 @@ void Marketplace::saveTransactions(const std::string& filename)
             if (j < postEv.size() - 1) postEvStr += ",";
         }
 
-        file << "LOAN|" << t->getTransactionId() << "|" << t->getBorrower()->getUserId() << "|" << t->getResource()->getResourceId() << "|" << t->getStartDate() << "|" << t->getDueDate() << "|" << status << "|" << preEvStr << "|" << postEvStr << "\n";
+        // Appending advanced dispute traits onto the standard record footprint
+        file << "LOAN|" << t->getTransactionId() << "|" << t->getBorrower()->getUserId() << "|" 
+             << t->getResource()->getResourceId() << "|" << t->getStartDate() << "|" << t->getDueDate() << "|" 
+             << status << "|" << preEvStr << "|" << postEvStr << "|" 
+             << (t->isDisputed() ? "1" : "0") << "|" << t->getDisputeReason() << "|" 
+             << (t->isDisputeResolved() ? "1" : "0") << "\n";
     }
 }
 
@@ -338,7 +343,8 @@ void Marketplace::loadTransactions(const std::string& filename)
         if (type == "LOAN")
         {
             std::string tidS, bIdS, rIdS, start, due, status, preEvStr, postEvStr;
-            std::getline(ss, tidS, '|'); std::getline(ss, bIdS, '|'); std::getline(ss, rIdS, '|'); std::getline(ss, start, '|'); std::getline(ss, due, '|'); std::getline(ss, status, '|');
+            std::getline(ss, tidS, '|'); std::getline(ss, bIdS, '|'); std::getline(ss, rIdS, '|'); 
+            std::getline(ss, start, '|'); std::getline(ss, due, '|'); std::getline(ss, status, '|');
             std::getline(ss, preEvStr, '|'); std::getline(ss, postEvStr, '|');
 
             int tid = std::stoi(tidS);
@@ -377,6 +383,13 @@ void Marketplace::loadTransactions(const std::string& filename)
                 while (std::getline(postSS, path, ','))
                 {
                     if (!path.empty()) t->addPostReturnEvidence(path);
+                }
+
+                // Extract dispute fields if they exist in the schema record
+                std::string dispStr, dispReason, resolvedStr;
+                if (std::getline(ss, dispStr, '|') && std::getline(ss, dispReason, '|') && std::getline(ss, resolvedStr, '|'))
+                {
+                    t->loadDisputeState((dispStr == "1"), dispReason, (resolvedStr == "1"));
                 }
 
                 transactions.push_back(t);

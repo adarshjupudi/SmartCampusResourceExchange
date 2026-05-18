@@ -19,12 +19,13 @@ private:
     std::string dueDate;
     std::string returnDate;
 
-    // Condition evidence lists
-    std::vector<std::string> preLoanEvidence;     // Owner uploads
-    std::vector<std::string> postReturnEvidence;  // Borrower uploads
+    std::vector<std::string> preLoanEvidence;     
+    std::vector<std::string> postReturnEvidence;  
 
     bool returned;
     bool disputed;
+    std::string disputeReason;
+    bool disputeResolved;
 
 public:
     LoanTransaction(int transactionId,
@@ -34,19 +35,15 @@ public:
                     const std::string &startDate,
                     const std::string &dueDate);
 
-    // Core transaction operations
     bool process() override;
 
-    // Return handling
     void markReturned(const std::string &returnDate);
     bool isReturned() const;
     bool isLate() const;
 
-    // Evidence modification methods
     void addPreLoanEvidence(const std::string &path);
     void addPostReturnEvidence(const std::string &path);
 
-    // Getters
     User *getBorrower() const;
     User *getOwner() const;
     Resource *getResource() const;
@@ -54,9 +51,19 @@ public:
     std::string getStartDate() const;
     std::string getDueDate() const;
     
-    // Constant reference getters for data serialization
     const std::vector<std::string>& getPreLoanEvidence() const;
     const std::vector<std::string>& getPostReturnEvidence() const;
+
+    // Dispute Lifecycle Operations
+    void raiseDispute(const std::string &reason);
+    void resolveDispute(bool borrowerAtFault);
+    
+    bool isDisputed() const;
+    bool isDisputeResolved() const;
+    std::string getDisputeReason() const;
+
+    // Loading helper for database reconstruction
+    void loadDisputeState(bool isDisp, const std::string &reason, bool isResolved);
 };
 
 #endif

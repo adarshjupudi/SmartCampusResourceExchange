@@ -101,10 +101,10 @@ int main()
         else
         {
             cout << "\nLogged in: " << currentUser->getName() << " | Trust: " << currentUser->getTrustPoints() << "\n";
-            cout << "1. Add Book\n2. View Resources\n3. Request Loan\n4. Return Resource\n5. View Inbox\n6. Add Pre-Loan Evidence\n7. Set Resource Rules\n8. Logout\nChoice: ";
+            cout << "1. Add Book\n2. View Resources\n3. Request Loan\n4. Return Resource\n5. View Inbox\n6. Add Pre-Loan Evidence\n7. Set Resource Rules\n8. File Item Dispute\n9. Resolve Existing Dispute (Admin)\n10. Logout\nChoice: ";
             int choice; cin >> choice; cin.ignore(numeric_limits<streamsize>::max(), '\n');
 
-            if (choice == 8)
+            if (choice == 10)
             {
                 currentUser = nullptr;
                 continue;
@@ -255,7 +255,7 @@ int main()
                     cout << "Invalid Transaction ID or permissions denied.\n";
                 }
             }
-            else if (choice == 7) // NEW: Set Resource Rules
+            else if (choice == 7) 
             {
                 cout << "\n--- Your Listed Resources ---\n";
                 const std::vector<Resource*>& res = marketplace.getResources();
@@ -307,6 +307,118 @@ int main()
                 else
                 {
                     cout << "Invalid Resource ID or access denied.\n";
+                }
+            }
+            else if (choice == 8) // NEW: File Item Dispute
+            {
+                cout << "\n--- Historic/Active Outgoing Loans on Your Items ---\n";
+                const std::vector<LoanTransaction*>& txs = marketplace.getTransactions();
+                bool foundAny = false;
+                for (size_t i = 0; i < txs.size(); ++i)
+                {
+                    if (txs[i]->getOwner()->getUserId() == currentUser->getUserId() && !txs[i]->isDisputed())
+                    {
+                        string statStr = (txs[i]->getStatus() == Transaction::Status::COMPLETED) ? "COMPLETED" : "ACTIVE";
+                        cout << "Tx ID: " << txs[i]->getTransactionId() << " | Item: " << txs[i]->getResource()->getDisplayName() 
+                             << " | Borrower ID: " << txs[i]->getBorrower()->getUserId() << " | Status: " << statStr << "\n";
+                        foundAny = true;
+                    }
+                }
+
+                if (!foundAny)
+                {
+                    cout << "No items available to file a dispute against.\n";
+                    continue;
+                }
+
+                int targetTxId;
+                cout << "Enter Transaction ID to flag as DISPUTED: ";
+                cin >> targetTxId;
+                cin.ignore(numeric_limits<streamsize>::max(), '\n');
+
+                LoanTransaction* targetTx = nullptr;
+                for (size_t i = 0; i < txs.size(); ++i)
+                {
+                    if (txs[i]->getTransactionId() == targetTxId && txs[i]->getOwner()->getUserId() == currentUser->getUserId())
+                    {
+                        targetTx = txs[i];
+                    }
+                }
+
+                if (targetTx)
+                {
+                    string reason;
+                    cout << "Enter clear reason for the asset dispute (e.g., Missing battery, Scratched screen): ";
+                    getline(cin, reason);
+
+                    targetTx->raiseDispute(reason);
+                    marketplace.saveTransactions("transactions.txt");
+                    marketplace.saveUsers("users.txt");
+                    cout << "Dispute logged successfully. Trust modifications locked for administration audit.\n";
+                }
+                else
+                {
+                    cout << "Invalid Transaction ID or permissions validation failed.\n";
+                }
+            }
+            else if (choice == 9) // NEW: Resolve Existing Dispute (Admin Simulation)
+            {
+                cout << "\n--- Active Unresolved Campus Disputes ---\n";
+                const std::vector<LoanTransaction*>& txs = marketplace.getTransactions();
+                bool foundAny = false;
+                for (size_t i = 0; i < txs.size(); ++i)
+                {
+                    if (txs[i]->isDisputed() && !txs[i]->isDisputeResolved())
+                    {
+                        cout << "Tx ID: " << txs[i]->getTransactionId() << " | Item: " << txs[i]->getResource()->getDisplayName() 
+                             << " | Owner ID: " << txs[i]->getOwner()->getUserId() << " | Borrower ID: " << txs[i]->getBorrower()->getUserId() 
+                             << "\n   Reason logged: " << txs[i]->getDisputeReason() << "\n";
+                        
+                        // Render image paths logged in Step 6 for visual proof audit
+                        cout << "   [Audit Evidence] Pre-loan links: ";
+                        const auto& pre = txs[i]->getPreLoanEvidence();
+                        for (size_t k = 0; k < pre.size(); ++k) cout << pre[k] << " ";
+                        cout << "\n   [Audit Evidence] Post-return links: ";
+                        const auto& post = txs[i]->getPostReturnEvidence();
+                        for (size_t k = 0; k < post.size(); ++k) cout << post[k] << " ";
+                        cout << "\n---------------------------------------\n";
+                        foundAny = true;
+                    }
+                }
+
+                if (!foundAny)
+                {
+                    cout << "No outstanding disputes found in system space.\n";
+                    continue;
+                }
+
+                int targetTxId;
+                cout << "Enter Transaction ID to issue judicial settlement for: ";
+                cin >> targetTxId;
+
+                LoanTransaction* targetTx = nullptr;
+                for (size_t i = 0; i < txs.size(); ++i)
+                {
+                    if (txs[i]->getTransactionId() == targetTxId && txs[i]->isDisputed() && !txs[i]->isDisputeResolved())
+                    {
+                        targetTx = txs[i];
+                    }
+                }
+
+                if (targetTx)
+                {
+                    int faultChoice;
+                    cout << "Based on evidence audit, is the Borrower at fault for asset damage?\n1. Yes (Borrower Penalized)\n0. No (Owner Penalized for Fraud)\nSelect: ";
+                    cin >> faultChoice;
+
+                    targetTx->resolveDispute(faultChoice == 1);
+                    marketplace.saveTransactions("transactions.txt");
+                    marketplace.saveUsers("users.txt");
+                    cout << "Dispute record settled permanently and trust pools recalculated.\n";
+                }
+                else
+                {
+                    cout << "Invalid Transaction ID or dispute record already finalized.\n";
                 }
             }
         }

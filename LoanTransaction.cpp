@@ -16,7 +16,9 @@ LoanTransaction::LoanTransaction(int transactionId,
       dueDate(dueDate),
       returnDate(""),
       returned(false),
-      disputed(false)
+      disputed(false),
+      disputeReason(""),
+      disputeResolved(false)
 {
     status = Status::PENDING;
 }
@@ -122,4 +124,87 @@ const std::vector<std::string>& LoanTransaction::getPreLoanEvidence() const
 const std::vector<std::string>& LoanTransaction::getPostReturnEvidence() const
 {
     return postReturnEvidence;
+}
+
+void LoanTransaction::raiseDispute(const std::string &reason)
+{
+    if (disputed)
+    {
+        return;
+    }
+    disputed = true;
+    disputeReason = reason;
+    disputeResolved = false;
+    status = Status::DISPUTED;
+
+    // Dynamic Phase 1: Revoke the points assigned during standard return
+    if (returned)
+    {
+        if (isLate())
+        {
+            borrower->updateTrust(10); // Undo the late penalty to overwrite with damage penalty
+        }
+        else
+        {
+            borrower->updateTrust(-2); // Revoke the clean return reward
+        }
+    }
+    
+    // Phase 2: Execute base damage investigation hold penalty
+    borrower->updateTrust(-20);
+}
+
+void LoanTransaction::resolveDispute(bool borrowerAtFault)
+{
+    if (!disputed || disputeResolved)
+    {
+        return;
+    }
+    disputeResolved = true;
+
+    if (borrowerAtFault)
+    {
+        status = Status::FAILED; // Finalized system flag as asset damage violation
+        borrower->updateTrust(-10); // Additional penalty for asset negligence
+    }
+    else
+    {
+        status = Status::COMPLETED; // Reinstate original execution parameters
+        
+        // Restore the borrower's locked assets
+        borrower->updateTrust(20);
+        if (returned && !isLate())
+        {
+            borrower->updateTrust(2);
+        }
+        
+        // Deduct points from the owner for lodging a fraudulent damage claim
+        owner->updateTrust(-15);
+    }
+}
+
+bool LoanTransaction::isDisputed() const
+{
+    return disputed;
+}
+
+bool LoanTransaction::isDisputeResolved() const
+{
+    return disputeResolved;
+}
+
+std::string LoanTransaction::getDisputeReason() const
+{
+    return disputeReason;
+}
+
+void LoanTransaction::loadDisputeState(bool isDisp, const std::string &reason, bool isResolved)
+{
+    disputed = isDisp;
+    disputeReason = reason;
+    disputeResolved = isResolved;
+    if (isDisp && !isResolved)
+    {
+        status = Status::DISPUTED;
+    }
 }

@@ -7,7 +7,7 @@
 #include <ctime>
 #include <sstream>
 
-// Platform-conditional macros for Windows console configuration API mappings
+// Platform-conditional configuration for Windows console character rendering
 #ifdef _WIN32
 #include <windows.h> 
 #endif
@@ -87,7 +87,7 @@ string getFutureDate(int daysInFuture)
 
 int main()
 {
-    // Fix: Force the Windows host console environment to interpret UTF-8 character arrays
+    // Configure console code page mapping to display UTF-8 lines correctly on Windows
     #ifdef _WIN32
     SetConsoleOutputCP(CP_UTF8);
     #endif
@@ -183,7 +183,7 @@ int main()
         else
         {
             printUserPanel(currentUser);
-            cout << "  [1] Catalog New Asset (Book)\n";
+            cout << "  [1] Catalog New Campus Asset\n";
             cout << "  [2] Browse Campus Inventory\n";
             cout << "  [3] Submit Resource Loan Request\n";
             cout << "  [4] Process Item Return & Log Evidence\n";
@@ -208,21 +208,66 @@ int main()
             }
             if (choice == 1) 
             {
-                printHeader("CATALOG NEW ASSET (BOOK)");
-                string t, a, i; 
-                int e;
-                cout << "Book Title: "; getline(cin, t); 
-                cout << "Author    : "; getline(cin, a); 
-                cout << "ISBN Code : "; cin >> i; 
-                cout << "Edition   : "; cin >> e;
-                
-                Book* b = new Book(currentUser->getUserId(), Resource::ImportanceLevel::MEDIUM, t, a, i, e);
-                marketplace.addResource(b); 
-                marketplace.saveResources("items.txt");
-                
+                printHeader("CATALOG NEW ASSET TYPE");
+                cout << "  [1] Add Literary Resource (Book)\n";
+                cout << "  [2] Add Electronic Device / Hardware\n";
+                cout << "  [3] Add Laboratory Gear / Protective Wear\n";
                 printDivider();
-                cout << ">> Asset successfully indexed!\n";
-                cout << ">> Resource Tracking ID: " << b->getResourceId() << "\n";
+                cout << "Select Asset Category: ";
+                int itemType;
+                cin >> itemType;
+                cin.ignore(numeric_limits<streamsize>::max(), '\n');
+
+                if (itemType == 1)
+                {
+                    printHeader("REGISTER NEW BOOK");
+                    string t, a, i; 
+                    int e;
+                    cout << "Book Title: "; getline(cin, t); 
+                    cout << "Author    : "; getline(cin, a); 
+                    cout << "ISBN Code : "; cin >> i; 
+                    cout << "Edition   : "; cin >> e;
+                    
+                    Book* b = new Book(currentUser->getUserId(), Resource::ImportanceLevel::MEDIUM, t, a, i, e);
+                    marketplace.addResource(b); 
+                    marketplace.saveResources("items.txt");
+                    cout << "\n>> Book successfully indexed! Assigned ID: " << b->getResourceId() << "\n";
+                }
+                else if (itemType == 2)
+                {
+                    printHeader("REGISTER NEW ELECTRONIC HARDWARE");
+                    string name, brand, model;
+                    int working, battery;
+                    cout << "Display Name (e.g., Lab Laptop): "; getline(cin, name);
+                    cout << "Brand Name                   : "; getline(cin, brand);
+                    cout << "Model Number / SKU           : "; getline(cin, model);
+                    cout << "Is it functional? (1=Yes, 0=No): "; cin >> working;
+                    cout << "Battery Included? (1=Yes, 0=No): "; cin >> battery;
+
+                    Electronic* el = new Electronic(currentUser->getUserId(), Resource::ImportanceLevel::MEDIUM, name, brand, model, (working == 1), (battery == 1));
+                    marketplace.addResource(el);
+                    marketplace.saveResources("items.txt");
+                    cout << "\n>> Electronic device successfully indexed! Assigned ID: " << el->getResourceId() << "\n";
+                }
+                else if (itemType == 3)
+                {
+                    printHeader("REGISTER NEW LABORATORY GEAR");
+                    string name, cat;
+                    int safety, training;
+                    cout << "Display Name (e.g., Heavy Apron): "; getline(cin, name);
+                    cout << "Equipment Category / Room     : "; getline(cin, cat);
+                    cout << "Safety Level Rating (1 to 5)  : "; cin >> safety;
+                    cout << "Requires Training? (1=Yes, 0=No): "; cin >> training;
+
+                    LabGear* lb = new LabGear(currentUser->getUserId(), Resource::ImportanceLevel::MEDIUM, name, cat, safety, (training == 1));
+                    marketplace.addResource(lb);
+                    marketplace.saveResources("items.txt");
+                    cout << "\n>> Lab equipment successfully indexed! Assigned ID: " << lb->getResourceId() << "\n";
+                }
+                else
+                {
+                    cout << ">> ERROR: Choice invalid. Resource cataloging canceled.\n";
+                }
             } 
             else if (choice == 2) 
             {
@@ -240,10 +285,26 @@ int main()
                     cout << "├─ ID: " << res[i]->getResourceId() << " | [" << s << "]\n";
                     cout << "│  Req Trust: " << res[i]->getMinTrustRequired() << " | Max Term: " << res[i]->getMaxLoanDuration() << " Days\n";
                     
+                    // FIXED: Cascading RTTI checks to safely downcast and view all asset details
                     if (res[i]->getResourceType() == "Book") 
                     { 
                         Book* b = dynamic_cast<Book*>(res[i]);
-                        cout << "│  Item Type: Title - \"" << b->getTitle() << "\"\n"; 
+                        cout << "│  Asset Class: Book | Title: \"" << b->getTitle() << "\" by " << b->getAuthor() << "\n"; 
+                    }
+                    else if (res[i]->getResourceType() == "Electronic")
+                    {
+                        Electronic* e = dynamic_cast<Electronic*>(res[i]);
+                        string workStr = e->isWorking() ? "Functional" : "Maintenance Required";
+                        string battStr = e->hasBattery() ? "Battery Included" : "External Power Required";
+                        cout << "│  Asset Class: Electronic | \"" << e->getDisplayName() << "\" [" << e->getBrand() << " " << e->getModel() << "]\n";
+                        cout << "│  Specifications: " << workStr << " | " << battStr << "\n";
+                    }
+                    else if (res[i]->getResourceType() == "LabGear")
+                    {
+                        LabGear* g = dynamic_cast<LabGear*>(res[i]);
+                        string trainStr = g->needsTraining() ? "Certification Required" : "Open Access (No Training)";
+                        cout << "│  Asset Class: Lab Gear | \"" << g->getDisplayName() << "\" [" << g->getCatergory() << "]\n";
+                        cout << "│  Specifications: Safety Rating Tier " << g->getSafetyRating() << " | " << trainStr << "\n";
                     }
                     printDivider();
                 }
@@ -364,6 +425,7 @@ int main()
                 
                 int targetTxId;
                 cout << "\nEnter target Transaction ID: ";
+                targetTxId;
                 cin >> targetTxId;
                 cin.ignore(numeric_limits<streamsize>::max(), '\n');
                 

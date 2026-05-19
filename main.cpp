@@ -7,6 +7,11 @@
 #include <ctime>
 #include <sstream>
 
+// Platform-conditional macros for Windows console configuration API mappings
+#ifdef _WIN32
+#include <windows.h> 
+#endif
+
 #include "Marketplace.h"
 #include "User.h"
 #include "Book.h"
@@ -17,7 +22,7 @@
 using namespace std;
 
 // ==========================================
-//           UI presentation helpers
+//           UI Presentation Helpers
 // ==========================================
 
 void printHeader(const string& title)
@@ -82,6 +87,11 @@ string getFutureDate(int daysInFuture)
 
 int main()
 {
+    // Fix: Force the Windows host console environment to interpret UTF-8 character arrays
+    #ifdef _WIN32
+    SetConsoleOutputCP(CP_UTF8);
+    #endif
+
     Marketplace marketplace;
     marketplace.loadUsers("users.txt");
     marketplace.loadResources("items.txt");

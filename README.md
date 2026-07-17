@@ -76,7 +76,7 @@ Make sure a C++ compiler such as GCC/G++ with C++11 or C++14 support is installe
 
 ### Clone the Repository
 
-git clone https://github.com/YOUR_USERNAME/YOUR_REPOSITORY.git
+git clone https://github.com/adarshjupudi/SmartCampusResourceExchange.git
 cd YOUR_REPOSITORY
 
 ### Create Required Files
